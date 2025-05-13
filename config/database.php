@@ -5,9 +5,9 @@ use Illuminate\Support\Str;
 return [
 
     /*
-    |--------------------------------------------------------------------------
+    |----------------------------------------------------------------------
     | Default Database Connection Name
-    |--------------------------------------------------------------------------
+    |----------------------------------------------------------------------
     |
     | Here you may specify which of the database connections below you wish
     | to use as your default connection for database operations. This is
@@ -16,12 +16,12 @@ return [
     |
     */
 
-    'default' => env('DB_CONNECTION', 'sqlite'),
+    'default' => env('DB_CONNECTION', 'mongodb'),
 
     /*
-    |--------------------------------------------------------------------------
+    |----------------------------------------------------------------------
     | Database Connections
-    |--------------------------------------------------------------------------
+    |----------------------------------------------------------------------
     |
     | Below are all of the database connections defined for your application.
     | An example configuration is provided for each database system which
@@ -111,24 +111,19 @@ return [
             // 'encrypt' => env('DB_ENCRYPT', 'yes'),
             // 'trust_server_certificate' => env('DB_TRUST_SERVER_CERTIFICATE', 'false'),
         ],
+
         'mongodb' => [
-    'driver'   => 'mongodb',
-    'host'     => env('DB_HOST', '127.0.0.1'),
-    'port'     => env('DB_PORT', 27017),
-    'database' => env('DB_DATABASE', 'auth_db'),
-    'username' => env('DB_USERNAME'),
-    'password' => env('DB_PASSWORD'),
-    'options'  => [
-        'database' => env('DB_AUTHENTICATION_DATABASE', 'admin'), // required with Mongo 3+
-    ]
-],
+            'driver'   => 'mongodb',
+            'dsn'      => env('DB_CONNECTION_STRING'),
+            'database' => env('DB_DATABASE', 'auth_db'),
+        ],
 
     ],
 
     /*
-    |--------------------------------------------------------------------------
+    |----------------------------------------------------------------------
     | Migration Repository Table
-    |--------------------------------------------------------------------------
+    |----------------------------------------------------------------------
     |
     | This table keeps track of all the migrations that have already run for
     | your application. Using this information, we can determine which of
@@ -142,9 +137,9 @@ return [
     ],
 
     /*
-    |--------------------------------------------------------------------------
+    |----------------------------------------------------------------------
     | Redis Databases
-    |--------------------------------------------------------------------------
+    |----------------------------------------------------------------------
     |
     | Redis is an open source, fast, and advanced key-value store that also
     | provides a richer body of commands than a typical key-value system
