@@ -1,6 +1,6 @@
 FROM php:8.2-cli
 
-# تثبيت الأدوات الأساسية و PHP extensions
+# تثبيت الأدوات الأساسية و PHP extensions المطلوبة للبناء والتشغيل
 RUN apt-get update && apt-get install -y \
     unzip \
     git \
@@ -13,12 +13,10 @@ RUN apt-get update && apt-get install -y \
     libcurl4-openssl-dev \
     libpng-dev \
     libicu-dev \
-    zlib1g-dev
+    zlib1g-dev \
+    && docker-php-ext-install pdo pdo_mysql mbstring xml zip intl
 
-# تثبيت الامتدادات المطلوبة
-RUN docker-php-ext-install pdo pdo_mysql mbstring tokenizer xml zip intl
-
-# تثبيت MongoDB extension
+# تثبيت MongoDB extension عبر PECL وتفعيله
 RUN pecl install mongodb \
     && docker-php-ext-enable mongodb
 
@@ -28,14 +26,14 @@ RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local
 # إعداد مجلد العمل
 WORKDIR /app
 
-# نسخ كل الملفات
+# نسخ كل الملفات للمجلد داخل الحاوية
 COPY . .
 
-# تشغيل composer install
+# تثبيت تبعيات المشروع عبر composer
 RUN composer install --no-interaction --optimize-autoloader
 
-# فتح البورت
+# فتح بورت 8000
 EXPOSE 8000
 
-# تشغيل التطبيق
+# تشغيل التطبيق على المضيف 0.0.0.0 والمنفذ 8000
 CMD ["php", "artisan", "serve", "--host", "0.0.0.0", "--port", "8000"]
