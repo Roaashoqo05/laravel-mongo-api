@@ -1,27 +1,41 @@
-# نستخدم صورة PHP الرسمية مع CLI ونسخة 8.1
-FROM php:8.1-cli
+FROM php:8.2-cli
 
-# تحديث نظام التشغيل وتثبيت أدوات ضرورية مثل unzip، git، curl
-RUN apt-get update && apt-get install -y unzip git curl libzip-dev zip
+# تثبيت الأدوات الأساسية و PHP extensions
+RUN apt-get update && apt-get install -y \
+    unzip \
+    git \
+    curl \
+    libzip-dev \
+    zip \
+    libxml2-dev \
+    libonig-dev \
+    libssl-dev \
+    libcurl4-openssl-dev \
+    libpng-dev \
+    libicu-dev \
+    zlib1g-dev
 
-# تثبيت MongoDB PHP extension
+# تثبيت الامتدادات المطلوبة
+RUN docker-php-ext-install pdo pdo_mysql mbstring tokenizer xml zip intl
+
+# تثبيت MongoDB extension
 RUN pecl install mongodb \
     && docker-php-ext-enable mongodb
 
-# تثبيت Composer (مدير الحزم لPHP)
+# تثبيت Composer
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
-# تعيين مجلد العمل داخل الحاوية
+# إعداد مجلد العمل
 WORKDIR /app
 
-# نسخ كل ملفات المشروع للحاوية
-COPY . /app
+# نسخ كل الملفات
+COPY . .
 
-# تثبيت اعتمادات PHP باستخدام Composer
+# تشغيل composer install
 RUN composer install --no-interaction --optimize-autoloader
 
-# كشف المنفذ اللي التطبيق راح يشتغل عليه
-EXPOSE 10000
+# فتح البورت
+EXPOSE 8000
 
-# الأمر لتشغيل تطبيق Laravel
-CMD ["php", "artisan", "serve", "--host", "0.0.0.0", "--port", "10000"]
+# تشغيل التطبيق
+CMD ["php", "artisan", "serve", "--host", "0.0.0.0", "--port", "8000"]
