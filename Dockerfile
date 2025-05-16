@@ -14,7 +14,8 @@ RUN apt-get update && apt-get install -y \
     libpng-dev \
     libicu-dev \
     zlib1g-dev \
-    && docker-php-ext-install pdo pdo_mysql mbstring xml zip intl
+    && docker-php-ext-install pdo pdo_mysql mbstring xml zip intl \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # تثبيت MongoDB extension عبر PECL وتفعيله
 RUN pecl install mongodb \
@@ -32,8 +33,8 @@ COPY . .
 # تثبيت تبعيات المشروع عبر composer
 RUN composer install --no-interaction --optimize-autoloader
 
-# فتح بورت 8000
-EXPOSE 8000
+# فتح بورت 8080 (تأكد انه نفس البورت في CMD)
+EXPOSE 8080
 
-# تشغيل التطبيق على المضيف 0.0.0.0 والمنفذ 8000
-CMD ["php", "artisan", "serve", "--host", "0.0.0.0", "--port", "8000"]
+# تشغيل التطبيق على المضيف 0.0.0.0 والمنفذ 8080
+CMD ["php", "artisan", "serve", "--host", "0.0.0.0", "--port", "8080"]
