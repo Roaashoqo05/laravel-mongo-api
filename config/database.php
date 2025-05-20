@@ -87,11 +87,17 @@ return [
             'prefix_indexes' => true,
         ],
 
-        'mongodb' => [
-            'driver'   => 'mongodb',
-            'dsn'      => env('DB_CONNECTION_STRING'),
-            'database' => env('DB_DATABASE', 'auth_db'),
-        ],
+       'mongodb' => [
+    'driver' => 'mongodb',
+    'dsn' => env('DB_CONNECTION_STRING'),
+    'database' => env('DB_DATABASE', 'SpareCar'), // اسم الداتابيز الرئيسي
+    'options' => [
+        'ssl' => true,
+        'authSource' => 'admin', // مهم للمصادقة
+        'retryWrites' => true,
+        'w' => 'majority'
+    ]
+    ],
 
     ],
 
