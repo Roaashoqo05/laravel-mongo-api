@@ -1,7 +1,6 @@
 <?php
 
 namespace App\Http\Controllers;
-
 use Illuminate\Http\Request;
 use App\Models\CarPart;
 use MongoDB\BSON\Regex;
@@ -22,12 +21,13 @@ class CarPartController extends Controller
             'name' => 'required|string|max:255',
             'price' => 'required|numeric',
             'description' => 'nullable|string',
-            'category',
-        'brand',
-        'car_model',
-        'year',
-        'stock',
-        'image_url',
+            'category' => 'nullable|string',
+            'brand' => 'nullable|string',
+            'car_model' => 'nullable|string',
+            'year' => 'nullable|integer',
+            'stock' => 'nullable|integer',
+            'image_url' => 'nullable|string',
+
         ]);
 
         // إنشاء المنتج
@@ -36,20 +36,24 @@ class CarPartController extends Controller
         // إرجاع المنتج الجديد
         return response()->json($carPart, 201);
     }
+
     // دالة البحث (GET)
-public function search(Request $request)
-{
-    $query = $request->input('query');
+    public function search(Request $request)
+    {
+        $query = $request->input('query');
 
-    if (!$query) {
-        return response()->json(['message' => 'يرجى إدخال كلمة البحث'], 400);
+        if (!$query) {
+            return response()->json(['message' => 'يرجى إدخال كلمة البحث'], 400);
+        }
+
+        // إنشاء Regex لحساسية غير كبيرة للحروف
+        $regex = new Regex($query, 'i');
+
+        $results = CarPart::where('name', 'regex', $regex)
+                   ->orWhere('description', 'regex', $regex)
+                   ->orWhere('brand', 'regex', $regex)
+                   ->get();
+
+        return response()->json($results);
     }
-
-    $results = CarPart::where('name', new Regex($query, 'i'))
-               ->orWhere('description', new Regex($query, 'i'))
-               ->orWhere('brand', new Regex($query, 'i'))
-               ->get();
-
-    return response()->json($results);
-}
 }

@@ -29,6 +29,7 @@ Route::prefix('car-parts')->group(function () {
     Route::get('/search', [CarPartController::class, 'search']);
 });
 
+
 // Protected Routes (require authentication)
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', function (Request $request) {
@@ -36,4 +37,8 @@ Route::middleware('auth:sanctum')->group(function () {
     });
     
     Route::post('/car-parts', [CarPartController::class, 'store']);
+});
+Route::prefix('invoices')->group(function () {
+    Route::post('/', [InvoiceController::class, 'create']);
+    Route::get('/{id}', [InvoiceController::class, 'show']);
 });
