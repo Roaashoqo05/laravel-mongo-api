@@ -4,6 +4,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CarPartController;
+use App\Http\Controllers\InvoiceController;
+use App\Models\CarPart;  // مهم لاستخدام CarPart في test-mongodb
 
 // Public Routes
 Route::post('/register', [AuthController::class, 'register']);
@@ -24,20 +26,13 @@ Route::get('/test-mongodb', function() {
 });
 
 // Car Parts Routes
-Route::prefix('car-parts')->group(function () {
+Route::prefix('car-parts')->group(function () { 
     Route::get('/', [CarPartController::class, 'index']);
     Route::get('/search', [CarPartController::class, 'search']);
+    Route::post('/', [CarPartController::class, 'store']);  // نقلت الـ POST هنا
 });
 
-
-// Protected Routes (require authentication)
-Route::middleware('auth:sanctum')->group(function () {
-    Route::get('/user', function (Request $request) {
-        return $request->user();
-    });
-    
-    Route::post('/car-parts', [CarPartController::class, 'store']);
-});
+// Invoices Routes
 Route::prefix('invoices')->group(function () {
     Route::post('/', [InvoiceController::class, 'create']);
     Route::get('/{id}', [InvoiceController::class, 'show']);
