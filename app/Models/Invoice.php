@@ -6,8 +6,9 @@ use MongoDB\Laravel\Eloquent\Model;
 
 class Invoice extends Model
 {
+    protected $connection = 'mongodb';
     protected $collection = 'invoices';
-    
+
     protected $fillable = [
         'invoice_number',
         'date',
@@ -17,9 +18,11 @@ class Invoice extends Model
         'tax',
         'discount',
         'total',
-        'status'
+        'status',
+        'notes',
+        'created_by',
     ];
-    
+
     protected $casts = [
         'date' => 'datetime',
         'items' => 'array',
@@ -27,6 +30,14 @@ class Invoice extends Model
         'subtotal' => 'float',
         'tax' => 'float',
         'discount' => 'float',
-        'total' => 'float'
+        'total' => 'float',
     ];
+
+    /**
+     * العلاقة مع اليوزر
+     */
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'created_by', '_id');
+    }
 }

@@ -5,8 +5,8 @@ use MongoDB\Laravel\Eloquent\Model;
 
 class CarPart extends Model
 {
-    protected $collection = 'car_parts'; // اسم الكولكشن في MongoDB (مكافئ للجدول في MySQL)
-    
+    protected $collection = 'car_parts';
+
     protected $fillable = [
         'name',
         'description',
@@ -16,9 +16,8 @@ class CarPart extends Model
         'car_model',
         'year',
         'stock',
-        'image_url',
+        'image_urls',  // هنا مصفوفة روابط
     ];
-    
-    // لا حاجة لـ $table أو timestamps إذا كنت تريد تعطيلها
-    public $timestamps = true; // تفعيل created_at و updated_at (اختياري)
+
+    public $timestamps = true;
 }

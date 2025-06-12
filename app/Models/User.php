@@ -25,22 +25,23 @@ class User extends Authenticatable implements JWTSubject
     ];
 
     /**
-     * Get the identifier that will be stored in the subject claim of the JWT.
-     *
-     * @return mixed
+     * JWT Methods
      */
     public function getJWTIdentifier()
     {
         return $this->getKey();
     }
 
-    /**
-     * Return a key value array, containing any custom claims to be added to the JWT.
-     *
-     * @return array
-     */
     public function getJWTCustomClaims()
     {
         return [];
+    }
+
+    /**
+     * العلاقة مع الفواتير
+     */
+    public function invoices()
+    {
+        return $this->hasMany(Invoice::class, 'created_by', '_id');
     }
 }
