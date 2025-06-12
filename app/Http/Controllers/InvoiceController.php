@@ -6,52 +6,43 @@ use App\Models\Invoice;
 use App\Models\CarPart;
 use Illuminate\Http\Request;
 use MongoDB\BSON\ObjectId;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use App\Http\Controllers\InvoiceController;
 
 class InvoiceController extends Controller
 {
     public function create(Request $request)
     {
-        // التحقق من البيانات مع رسائل أخطاء عربية
-        $validatedData = $request->validate([
-            'customer.name' => 'required|string|max:255',
-            'customer.phone' => 'required|string|max:20|regex:/^[0-9]+$/',
-            'customer.address' => 'nullable|string|max:500',
-            'items' => 'required|array|min:1',
-            'items.*.part_id' => [
-                'required',
-                'string',
-                function ($attribute, $value, $fail) {
-                    if (!ObjectId::isValid($value)) {
-                        $fail('معرف القطعة غير صالح (يجب أن يكون 24 حرفاً)');
-                    }
-                }
-            ],
-            'items.*.quantity' => 'required|integer|min:1',
-            'tax' => 'numeric|min:0|max:10000',
-            'discount' => 'numeric|min:0|max:10000',
-            'notes' => 'nullable|string|max:1000'
-        ], [
-            'customer.name.required' => 'اسم العميل مطلوب',
-            'items.*.part_id.required' => 'معرف القطعة مطلوب',
-            'items.*.quantity.min' => 'الكمية يجب أن تكون على الأقل 1'
-        ]);
-
-        // بدء معاملة قاعدة البيانات
-        DB::beginTransaction();
-
         try {
+            // ✅ التحقق من صحة البيانات مع تعديل التحقق من ObjectId
+            $validatedData = $request->validate([
+                'items.*.part_id' => [
+                    'required',
+                    function ($attribute, $value, $fail) {
+                        try {
+                            new ObjectId($value);
+                        } catch (\Exception $e) {
+                            $fail("المعرف $attribute غير صالح.");
+                        }
+                    }
+                ],
+                'items.*.quantity' => 'required|integer|min:1',
+                'tax' => 'nullable|numeric|min:0',
+                'discount' => 'nullable|numeric|min:0',
+                'customer.name' => 'required|string',
+                'customer.phone' => 'required|string',
+                'customer.address' => 'nullable|string',
+                'notes' => 'nullable|string'
+            ]);
+
             $items = [];
             $subtotal = 0;
             $errors = [];
 
-            // معالجة كل عنصر في الفاتورة
+            // ✅ معالجة كل عنصر في الفاتورة
             foreach ($validatedData['items'] as $index => $item) {
                 try {
                     $objectId = new ObjectId($item['part_id']);
-                    $carPart = CarPart::find($objectId);
+                    $carPart = CarPart::where('_id', $objectId)->first();
 
                     if (!$carPart) {
                         $errors[] = "المنتج غير موجود للمعرف: {$item['part_id']}";
@@ -74,7 +65,7 @@ class InvoiceController extends Controller
                         'quantity' => $item['quantity'],
                         'unit_price' => $carPart->price,
                         'total' => $itemTotal,
-                        'original_stock' => $carPart->stock // لحفظ السجل الأصلي
+                        'original_stock' => $carPart->stock
                     ];
 
                     $subtotal += $itemTotal;
@@ -85,9 +76,8 @@ class InvoiceController extends Controller
                 }
             }
 
-            // إذا كان هناك أخطاء
+            // ✅ إذا وُجدت أخطاء في العناصر
             if (!empty($errors)) {
-                DB::rollBack();
                 return response()->json([
                     'success' => false,
                     'message' => 'أخطاء في العناصر',
@@ -95,12 +85,12 @@ class InvoiceController extends Controller
                 ], 422);
             }
 
-            // حساب المبالغ النهائية
+            // ✅ العمليات الحسابية
             $taxAmount = $validatedData['tax'] ?? 0;
             $discountAmount = $validatedData['discount'] ?? 0;
             $total = $subtotal + $taxAmount - $discountAmount;
 
-            // إنشاء الفاتورة
+            // ✅ إنشاء الفاتورة مع حفظ id و name لمستخدم الإنشاء
             $invoice = Invoice::create([
                 'invoice_number' => $this->generateInvoiceNumber(),
                 'date' => now(),
@@ -116,16 +106,16 @@ class InvoiceController extends Controller
                 'total' => $total,
                 'status' => 'pending',
                 'notes' => $validatedData['notes'] ?? null,
-                'created_by' => auth()->id() ?? null // إذا كان لديك نظام مصادقة
+                'created_by' => [
+                    'id' => auth()->id(),
+                    'name' => auth()->user()->name ?? null,
+                ],
             ]);
 
-            // تحديث المخزون
+            // ✅ تحديث المخزون بعد إنشاء الفاتورة
             foreach ($items as $item) {
-                CarPart::where('_id', $item['part_id'])
-                      ->decrement('stock', $item['quantity']);
+                CarPart::where('_id', $item['part_id'])->decrement('stock', $item['quantity']);
             }
-
-            DB::commit();
 
             return response()->json([
                 'success' => true,
@@ -135,35 +125,38 @@ class InvoiceController extends Controller
                 'message' => 'تم إنشاء الفاتورة بنجاح'
             ], 201);
 
-        } catch (\Exception $e) {
-            DB::rollBack();
-            Log::error("Invoice creation failed: " . $e->getMessage());
-            
+        } catch (\Throwable $e) {
+            Log::error('Invoice creation error: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'فشل في إنشاء الفاتورة',
-                'error' => $e->getMessage()
+                'message' => 'حدث خطأ أثناء إنشاء الفاتورة. يرجى المحاولة لاحقاً.'
             ], 500);
         }
     }
 
+    // توليد رقم الفاتورة
     private function generateInvoiceNumber()
     {
         $lastInvoice = Invoice::orderBy('invoice_number', 'desc')->first();
-        $lastNumber = $lastInvoice ? (int) substr($lastInvoice->invoice_number, 4) : 0;
+        $lastNumber = 0;
+
+        if ($lastInvoice && preg_match('/INV-(\d+)/', $lastInvoice->invoice_number, $matches)) {
+            $lastNumber = (int) $matches[1];
+        }
+
         return 'INV-' . str_pad($lastNumber + 1, 6, '0', STR_PAD_LEFT);
     }
 
+    // عرض فاتورة معينة
     public function show($id)
     {
         try {
-            $invoice = Invoice::with(['creator:id,name'])->findOrFail($id);
-            
+            $invoice = Invoice::findOrFail($id);
+
             return response()->json([
                 'success' => true,
                 'invoice' => $invoice
             ]);
-            
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -172,6 +165,7 @@ class InvoiceController extends Controller
         }
     }
 
+    // عرض جميع الفواتير مع إمكانية الفلترة
     public function index(Request $request)
     {
         $invoices = Invoice::query()

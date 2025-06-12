@@ -8,7 +8,7 @@ use MongoDB\BSON\Regex;
 
 class CarPartController extends Controller
 {
-    // جلب كل المنتجات (GET) مع إرجاع رابط الصورة كامل
+    // جلب كل المنتجات (GET)
     public function index()
     {
         $carParts = CarPart::all()->map(function ($part) {
@@ -22,17 +22,16 @@ class CarPartController extends Controller
                 'car_model' => $part->car_model,
                 'year' => $part->year,
                 'stock' => $part->stock,
-                'image_url' => $part->image ? asset('storage/images/' . $part->image) : null,
+                'image_urls' => $part->image_urls ?? [],  // مصفوفة روابط الصور
             ];
         });
 
         return response()->json($carParts);
     }
 
-    // حفظ منتج جديد (POST) مع رفع صورة
+    // حفظ منتج جديد (POST)
     public function store(Request $request)
     {
-        // التحقق من صحة البيانات
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'price' => 'required|numeric',
@@ -42,17 +41,10 @@ class CarPartController extends Controller
             'car_model' => 'nullable|string',
             'year' => 'nullable|integer',
             'stock' => 'nullable|integer',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'image_urls' => 'nullable|array',        // مصفوفة
+            'image_urls.*' => 'url',                 // كل رابط URL صحيح
         ]);
 
-        // معالجة رفع الصورة إذا موجودة
-        if ($request->hasFile('image')) {
-            $imageName = time() . '.' . $request->image->extension();
-            $request->image->storeAs('public/images', $imageName);
-            $validated['image'] = $imageName;  // خزن اسم الصورة وليس رابط كامل
-        }
-
-        // إنشاء المنتج مع بياناته كاملة
         $carPart = CarPart::create($validated);
 
         return response()->json($carPart, 201);
@@ -74,7 +66,6 @@ class CarPartController extends Controller
                    ->orWhere('brand', 'regex', $regex)
                    ->get();
 
-        // لو حابب ترجع رابط الصورة كامل في نتائج البحث برضو
         $results = $results->map(function ($part) {
             return [
                 '_id' => $part->_id,
@@ -86,7 +77,7 @@ class CarPartController extends Controller
                 'car_model' => $part->car_model,
                 'year' => $part->year,
                 'stock' => $part->stock,
-                'image_url' => $part->image ? asset('storage/images/' . $part->image) : null,
+                'image_urls' => $part->image_urls ?? [],
             ];
         });
 
