@@ -42,7 +42,7 @@ class CarPartController extends Controller
             'year' => 'nullable|integer',
             'stock' => 'nullable|integer',
             'image_urls' => 'nullable|array',        // مصفوفة
-            'image_urls.*' => 'url',                 // كل رابط URL صحيح
+            //'image_urls.*' => 'url',                 // كل رابط URL صحيح
         ]);
 
         $carPart = CarPart::create($validated);
@@ -82,5 +82,29 @@ class CarPartController extends Controller
         });
 
         return response()->json($results);
+    }
+
+    // دالة رفع الصور (POST)
+    public function uploadImages(Request $request)
+    {
+        // التأكد من وجود ملفات مرفوعة
+        if (!$request->hasFile('images')) {
+            return response()->json(['error' => 'No images uploaded'], 400);
+        }
+
+        $uploadedImageUrls = [];
+
+        // دعم رفع أكثر من صورة
+        foreach ($request->file('images') as $image) {
+            // تخزين الصورة داخل storage/app/public/car_parts_images
+            $path = $image->store('car_parts_images', 'public');
+            // إنشاء رابط مباشر للصورة
+            $uploadedImageUrls[] = asset('storage/' . $path);
+        }
+
+        // إرجاع روابط الصور في استجابة JSON
+        return response()->json([
+            'image_urls' => $uploadedImageUrls
+        ]);
     }
 }
