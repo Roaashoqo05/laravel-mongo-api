@@ -65,7 +65,8 @@ class InvoiceController extends Controller
                         'quantity' => $item['quantity'],
                         'unit_price' => $carPart->price,
                         'total' => $itemTotal,
-                        'original_stock' => $carPart->stock
+                        'original_stock' => $carPart->stock,
+                        'image_urls' => $carPart->image_urls ?? [],  // إضافة روابط الصور هنا
                     ];
 
                     $subtotal += $itemTotal;
