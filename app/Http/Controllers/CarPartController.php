@@ -22,7 +22,7 @@ class CarPartController extends Controller
                 'car_model' => $part->car_model,
                 'year' => $part->year,
                 'stock' => $part->stock,
-                'image_urls' => $part->image_urls ?? [],  // مصفوفة روابط الصور
+                'image_urls' => $part->image_urls ?? [],
             ];
         });
 
@@ -41,8 +41,7 @@ class CarPartController extends Controller
             'car_model' => 'nullable|string',
             'year' => 'nullable|integer',
             'stock' => 'nullable|integer',
-            'image_urls' => 'nullable|array',        // مصفوفة
-            //'image_urls.*' => 'url',                 // كل رابط URL صحيح
+            'image_urls' => 'nullable|array',
         ]);
 
         $carPart = CarPart::create($validated);
@@ -53,7 +52,8 @@ class CarPartController extends Controller
     // دالة البحث (GET)
     public function search(Request $request)
     {
-        $query = $request->input('query');
+        // ✅ استلام الكلمة المفتاحية من param اسمه term
+        $query = $request->query('term');
 
         if (!$query) {
             return response()->json(['message' => 'يرجى إدخال كلمة البحث'], 400);
@@ -62,9 +62,9 @@ class CarPartController extends Controller
         $regex = new Regex($query, 'i');
 
         $results = CarPart::where('name', 'regex', $regex)
-                   ->orWhere('description', 'regex', $regex)
-                   ->orWhere('brand', 'regex', $regex)
-                   ->get();
+            ->orWhere('description', 'regex', $regex)
+            ->orWhere('brand', 'regex', $regex)
+            ->get();
 
         $results = $results->map(function ($part) {
             return [
@@ -87,22 +87,17 @@ class CarPartController extends Controller
     // دالة رفع الصور (POST)
     public function uploadImages(Request $request)
     {
-        // التأكد من وجود ملفات مرفوعة
         if (!$request->hasFile('images')) {
-            return response()->json(['error' => 'No images uploaded'], 400);
+            return response()->json(['error' => 'لم يتم رفع أي صور'], 400);
         }
 
         $uploadedImageUrls = [];
 
-        // دعم رفع أكثر من صورة
         foreach ($request->file('images') as $image) {
-            // تخزين الصورة داخل storage/app/public/car_parts_images
             $path = $image->store('car_parts_images', 'public');
-            // إنشاء رابط مباشر للصورة
             $uploadedImageUrls[] = asset('storage/' . $path);
         }
 
-        // إرجاع روابط الصور في استجابة JSON
         return response()->json([
             'image_urls' => $uploadedImageUrls
         ]);
