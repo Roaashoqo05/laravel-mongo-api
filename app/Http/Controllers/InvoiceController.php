@@ -13,7 +13,6 @@ class InvoiceController extends Controller
     public function create(Request $request)
     {
         try {
-            // ✅ التحقق من صحة البيانات مع تعديل التحقق من ObjectId
             $validatedData = $request->validate([
                 'items.*.part_id' => [
                     'required',
@@ -38,7 +37,6 @@ class InvoiceController extends Controller
             $subtotal = 0;
             $errors = [];
 
-            // ✅ معالجة كل عنصر في الفاتورة
             foreach ($validatedData['items'] as $index => $item) {
                 try {
                     $objectId = new ObjectId($item['part_id']);
@@ -66,7 +64,7 @@ class InvoiceController extends Controller
                         'unit_price' => $carPart->price,
                         'total' => $itemTotal,
                         'original_stock' => $carPart->stock,
-                        'image_urls' => $carPart->image_urls ?? [],  // إضافة روابط الصور هنا
+                        'image_urls' => $carPart->image_urls ?? [],
                     ];
 
                     $subtotal += $itemTotal;
@@ -77,7 +75,6 @@ class InvoiceController extends Controller
                 }
             }
 
-            // ✅ إذا وُجدت أخطاء في العناصر
             if (!empty($errors)) {
                 return response()->json([
                     'success' => false,
@@ -86,12 +83,10 @@ class InvoiceController extends Controller
                 ], 422);
             }
 
-            // ✅ العمليات الحسابية
             $taxAmount = $validatedData['tax'] ?? 0;
             $discountAmount = $validatedData['discount'] ?? 0;
             $total = $subtotal + $taxAmount - $discountAmount;
 
-            // ✅ إنشاء الفاتورة مع حفظ id و name لمستخدم الإنشاء
             $invoice = Invoice::create([
                 'invoice_number' => $this->generateInvoiceNumber(),
                 'date' => now(),
@@ -113,7 +108,6 @@ class InvoiceController extends Controller
                 ],
             ]);
 
-            // ✅ تحديث المخزون بعد إنشاء الفاتورة
             foreach ($items as $item) {
                 CarPart::where('_id', $item['part_id'])->decrement('stock', $item['quantity']);
             }
@@ -135,7 +129,6 @@ class InvoiceController extends Controller
         }
     }
 
-    // توليد رقم الفاتورة
     private function generateInvoiceNumber()
     {
         $lastInvoice = Invoice::orderBy('invoice_number', 'desc')->first();
@@ -148,7 +141,6 @@ class InvoiceController extends Controller
         return 'INV-' . str_pad($lastNumber + 1, 6, '0', STR_PAD_LEFT);
     }
 
-    // عرض فاتورة معينة
     public function show($id)
     {
         try {
@@ -166,7 +158,6 @@ class InvoiceController extends Controller
         }
     }
 
-    // عرض جميع الفواتير مع إمكانية الفلترة
     public function index(Request $request)
     {
         $invoices = Invoice::query()
